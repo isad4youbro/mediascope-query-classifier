@@ -1,0 +1,19 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Secrets
+.env
+.env.*
+
+# Data/artifacts
+data/*
+!data/.gitkeep
+*.pkl
+*.zip
+train_cache.csv
+
+# Misc
+.ipynb_checkpoints/
+.DS_Store
