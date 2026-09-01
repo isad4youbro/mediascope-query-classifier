@@ -1,48 +1,111 @@
-﻿# Mediascope Query Classifier
+# MediaScope Query Classifier — Technical Notes
 
-Классификатор поисковых запросов с выходом в формате:
+## 🇬🇧 English
 
-- `TypeQuery` — видеозапрос (`0/1`)
-- `Title` — извлеченное/нормализованное название
-- `ContentType` — тип контента (`""`, `"фильм"`, `"сериал"`, `"мультфильм"`, `"мультсериал"`, `"прочее"`)
+This document contains the technical notes for the `mediascope/` implementation.
 
-## Архитектура
+### Prediction pipeline
 
-Гибридный подход:
-
-1. Нормализация запроса
-2. Классификация `TypeQuery`
-3. Восстановление `Title` (словари + эвристики + KNN retrieval)
-4. Классификация `ContentType`
-5. Пост-правила для доменных конфликтов
-
-## Файлы
-
-- `solution.py` — основной `PredictionModel`
-- `scripts/local_eval.py` — локальная оценка
-- `scripts/validate_group_kfold.py` — leak-safe GroupKFold
-- `scripts/download_data.py` — загрузка train-данных из API
-- `scripts/submit.py` — сборка и отправка bundle
-
-## Локальный запуск
-
-```bash
-pip install -r requirements.txt
-python -c "from solution import PredictionModel; print(PredictionModel().ready)"
+```text
+query
+  ↓
+normalization
+  ↓
+TypeQuery prediction
+  ↓
+Title retrieval / reconstruction
+  ↓
+ContentType prediction
+  ↓
+post-processing
+  ↓
+structured result
 ```
 
-## Локальная валидация
+### Core entry point
 
-1. Положите датасет в `data/train.csv`.
-2. Запустите:
+`solution.py` contains the public `PredictionModel` implementation.
+
+The main pipeline combines:
+
+- word-level TF-IDF features;
+- character-level TF-IDF features;
+- Logistic Regression;
+- LinearSVC overrides;
+- dictionary-based title recovery;
+- KNN similarity retrieval;
+- domain-specific post-processing.
+
+### Local evaluation
 
 ```bash
 python scripts/local_eval.py --data data/train.csv
+```
+
+### Grouped validation
+
+```bash
 python scripts/validate_group_kfold.py --data data/train.csv --folds 5
 ```
 
-## Переменные окружения
+The grouped validation path is kept separate so that the evaluation procedure is explicit and reproducible for a compatible local dataset.
 
-Смотрите `.env.example`.
+### Public-release policy
 
-Публичная версия уже очищена от приватных ключей и внутренних адресов.
+The competition dataset and private infrastructure are not part of this repository. The implementation is published as a technical / portfolio version of the solution.
+
+---
+
+## 🇷🇺 Русская версия
+
+Этот файл содержит техническое описание реализации внутри `mediascope/`.
+
+### Pipeline
+
+```text
+запрос
+  ↓
+нормализация
+  ↓
+TypeQuery
+  ↓
+retrieval / восстановление Title
+  ↓
+ContentType
+  ↓
+post-processing
+  ↓
+структурированный результат
+```
+
+### Основная точка входа
+
+`solution.py` содержит публичную реализацию `PredictionModel`.
+
+В pipeline используются:
+
+- word-level TF-IDF;
+- character-level TF-IDF;
+- Logistic Regression;
+- LinearSVC override;
+- словари для восстановления Title;
+- KNN similarity retrieval;
+- предметные post-processing правила.
+
+### Локальная оценка
+
+```bash
+python scripts/local_eval.py --data data/train.csv
+```
+
+### GroupKFold
+
+```bash
+python scripts/validate_group_kfold.py --data data/train.csv --folds 5
+```
+
+Grouped validation вынесена отдельно, чтобы процедура оценки оставалась явной и воспроизводимой на совместимом локальном датасете.
+
+### Публичный релиз
+
+Датасет соревнования и приватная инфраструктура не входят в репозиторий. Публикуется техническая / портфолио-версия решения.
